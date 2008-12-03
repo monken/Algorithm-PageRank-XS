@@ -19,7 +19,7 @@ my @results = ();
 
 my %results = %{$pr->results()};
 foreach my $key (sort keys %results) {
-    push(@results, "$key,$results{$key}");
+    push(@results, sprintf("%s,%0.4f", $key, $results{$key}));
 }
 
 my $result_data = join("\n", @results);

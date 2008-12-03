@@ -80,13 +80,14 @@ Array * initial(unsigned int order)
 Array * normalize(Array * vector)
 {
         register int i;
-        register float sum = 0;
+        register float max = 0;
 
         for (i = 0; i < array_len(vector); i++)
-                sum += array_get(vector, i);
+                if (array_get(vector, i) > max)
+                        max = array_get(vector, i);
 
         for (i = 0; i < array_len(vector); i++)
-                array_diveq(vector, i, sum);
+                array_diveq(vector, i, max);
 
         return vector;
 

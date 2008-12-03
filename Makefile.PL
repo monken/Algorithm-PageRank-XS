@@ -1,5 +1,12 @@
 use 5.008005;
 use ExtUtils::MakeMaker;
+use Config;
+
+my %opts = ();
+
+if ($Config{archname} && $Config{archname} =~ /64/) {
+    $opts{LDDLFLAGS} = '-fPIC '.$Config{lddlflags};
+}
 
 WriteMakefile(
     NAME              => 'Algorithm::PageRank::XS',
@@ -12,6 +19,16 @@ WriteMakefile(
     INC               => '-I.',
     OBJECT            => 'XS.o pagerank.o table.c',
 
+    %opts,
+
+    dist         => {
+        PREOP      => 'pod2text lib/Algorithm/PageRank/XS.pm | tee README >$(DISTVNAME)/README; chmod -R u=rwX,go=rX . ;',
+        COMPRESS   => 'gzip -9v',
+        SUFFIX     => '.gz',
+    },
+
+
     # Remove annoying temp files...
     clean             => {FILES => "*~"},
 );
+

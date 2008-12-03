@@ -8,6 +8,7 @@ use Algorithm::PageRank::XS;
 my $pr = Algorithm::PageRank::XS->new();
 
 
+# Run with the following graph.
 $pr->graph([
     qw(
 	       0 1
@@ -26,13 +27,21 @@ $pr->graph([
 	       6 5
 	       )]);
 
-is_deeply($pr->results(), {
-          '6' => '0.280776411294937',
-          '4' => '0.219223588705063',
-          '1' => '1.70876356196881e-34',
-          '3' => '0.280776411294937',
-          '0' => '9.23655993404077e-35',
-          '2' => '3.16121264703948e-34',
-          '5' => '0.219223588705063'
+my $x = $pr->results();
+
+# We truncate digits here to prevent small floating point errors
+while (my ($key, $value) = each(%{$x})) {
+    $x->{$key} = sprintf("%0.5f", $value);
+}
+
+# Compare it to the answer.
+is_deeply($x, {
+          '6' => '1.00000',
+          '4' => '0.78078',
+          '1' => '0.00000',
+          '3' => '1.00000',
+          '0' => '0.00000',
+          '2' => '0.00000',
+          '5' => '0.78078',
         }, "Ran PageRank on simple graph");
 

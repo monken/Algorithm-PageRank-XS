@@ -8,45 +8,55 @@ use Carp;
 require Exporter;
 use AutoLoader;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 require XSLoader;
 XSLoader::load('Algorithm::PageRank::XS', $VERSION);
 
 =head1 NAME
 
-Algorithm::PageRank::XS - Fast PageRank implementation
+Algorithm::PageRank::XS - A Fast PageRank implementation
 
 =head1 DESCRIPTION
 
-<Algorithm::PageRank> does some pagerank calculations, but it's 
-slow and memory intensive. This was developed to compute pagerank
-on graphs with millions of arcs. It will not, however, scale up to
-quadrillions of arcs unless you have a lot of local memory. This is
-not a distributed algorithm.
+This module implements a simple PageRank algorithm in C. The goal is
+to quickly get a vector that is closed to the eigenvector of the
+stochastic matrix of a graph.
+
+L<Algorithm::PageRank> does some pagerank calculations, but it's 
+slow and memory intensive. This module was developed to compute pagerank
+on graphs with millions of arcs. This module will not, however, scale
+up to quadrillions of arcs (see L<TODO>).
 
 =head1 SYNOPSYS
 
     use Algorithm::PageRank::XS;
 
-    my $pr = Algorithm::PageRank::XS->new(alpha => 0.85);
+    my $pr = Algorithm::PageRank::XS->new();
 
     $pr->graph([
-              0 => 1,
-              0 => 2,
-              1 => 0,
-              2 => 1,
+              'John'  => 'Joey',
+              'John'  => 'James',
+              'Joey'  => 'John',
+              'James' => 'Joey',
               ]
               );
 
-    $pr->result();
+    $pr->results();
+    # {
+    #      'James' => '0.569840431213379',
+    #      'Joey'  => '1',
+    #      'John'  => '0.754877686500549'
+    # }
 
 
-    # This simple program takes up arcs and prints the ranks.
 
+    #
+    #
+    # The following simple program takes up arcs and prints the ranks.
     use Algorithm::PageRank::XS;
 
-    my $pr = Algorithm::PageRank::XS->new(alpha => 0.85);
+    my $pr = Algorithm::PageRank::XS->new();
 
     while (<>) {
         chomp;
@@ -54,17 +64,34 @@ not a distributed algorithm.
         $pr->add_arc($from, $to);
     }
 
-    while (my ($name, $rank) = each(%{$pr->result()})) {
+    while (my ($name, $rank) = each(%{$pr->results()})) {
         print("$name,$rank\n");
     }
 
-=head1 CONSTRUCTORS
+=head1 METHODS
 
-=over
+=head2 new %PARAMS
 
-=item new %PARAMS
+Create a new PageRank object. Possible parameters:
 
-Create a new PageRank object. Parameters are: C<alpha>, C<max_tries>, and C<convergence>. C<alpha> is the damping constant (how far from the true eigenvector you are. C<max_tries> is the maximum number of iterations to run. C<convergence> is how close our vectors must be before we say we are done.
+=over 4
+
+=item alpha
+
+This is (1 - how much people can move from one node to another unconnected one randomly). Decreasing
+this number makes convergence more likely, but brings us further from the true eigenvector.
+
+=item max_tries
+
+The maximum number of tries until we give up trying to achieve convergence.
+
+=item convergence
+
+The maximum number the difference between two subsequent vectors must be before we say we are
+"convergent enough". The convergence rate is the rate at which C<alpha^t> goes to 0. Thus,
+if you set C<alpha> to C<0.85>, and C<convergence> to C<0.000001>, then you will need C<85> tries.
+
+=back
 
 =cut
 
@@ -87,25 +114,16 @@ sub new {
     return $self;
 }
 
-
-sub init ($) {
-    my $self = $_[0];
-    $self->{dim_map} = {};
-    $self->{rev_map} = {};
-    $self->{table} = pr_tableinit();
-}
-
-=item add_arc
+=head2 add_arc
 
 Add an arc to the pagerank object before running the computation.
 The actual values don't matter. So you can run:
 
     $pr->add_arc("Apple", "Orange");
 
-To mean that C<"Apple"> links to C<"Orange">.
+and you mean that C<"Apple"> links to C<"Orange">.
 
 =cut
-
 sub add_arc ($$$) {
     my ($self, $from, $to) = @_;
 
@@ -114,14 +132,14 @@ sub add_arc ($$$) {
     pr_tableadd($self->{table}, $from, $to) or croak("Unable to add arc to pagerank table.");
 }
 
-=item graph
+
+=head2 graph
 
 Add a graph, which is just an array of from, to combinations.
 This is equivalent to calling C<add_arc> a bunch of times, but may
 be more convenient.
 
 =cut
-
 sub graph ($$) {
     my ($self, $graph) = @_;
 
@@ -133,14 +151,17 @@ sub graph ($$) {
     }
 }
 
-=item results
+=head2 results
 
 Compute the pagerank vector, and return it as a hash.
 
-Whatever you called the nodes when specifying the arcs will be the keys of this hash, where the values will be the vector (which should sum to C<1>).
+Whatever you called the nodes when specifying the arcs will be the keys of this hash, where the
+values will be the vector.
+
+The result vector is normalized such that the maximum value is C<1>. This is to prevent extremely
+small values for large data sets. You can normalize it any other way you like if you don't like this.
 
 =cut
-
 sub results ($) {
     my $self = $_[0];
 
@@ -167,6 +188,8 @@ sub results ($) {
     return \%better_results;
 }
 
+
+# PRIVATE METHODS
 sub _dim_map ($$) {
     my ($self, $item) = @_;
 
@@ -181,14 +204,46 @@ sub _dim_map ($$) {
     }
 }
 
+sub init ($) {
+    my $self = $_[0];
+    $self->{dim_map} = {};
+    $self->{rev_map} = {};
+    $self->{table} = pr_tableinit();
+}
+
+
 1;
 __END__
+
+=head1 BUGS
+
+None known.
+
+=head1 TODO
+
+=over 4
+
+=item * We may want to support C<double> values rather than single floats
+
+=item * We may or may not want to adjust the weighting of individual arcs, as you cannot do now.
+
+=item * At present the indexes are C<unsigned int>, rather than C<size_t>. Thus this will not scale with 64-bit architectures.
+
+=item * It'd be nice to be able to use C<mmap(2)> to efficiently use the hard drive to scale to places where memory can't take us.
 
 =back
 
 =head1 PERFORMANCE
 
-This module is pretty fast. I ran this on a 1 million node set with 4.5 million arcs in 57 seconds on my 32-bit 1.8GHz laptop. Let me know if you have any performance tips.
+This module is pretty fast. I ran this on a 1 million node set with 4.5 million arcs in 57 seconds on my 32-bit 1.8GHz laptop. Let me know if you have any performance tips. It's orders of magnitude faster than L<Algorithm::PageRank>, but performance tests will be here shortly.
+
+=head1 SEE ALSO
+
+L<Algorithm::PageRank>
+
+=head1 AUTHOR
+
+Michael Axiak <mike@axiak.net>
 
 =head1 COPYRIGHT
 
