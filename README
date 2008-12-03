@@ -1,0 +1,80 @@
+NAME
+    Algorithm::PageRank::XS - Fast PageRank implementation
+
+DESCRIPTION
+    <Algorithm::PageRank> does some pagerank calculations, but it's slow and
+    memory intensive. This was developed to compute pagerank on graphs with
+    millions of arcs. It will not, however, scale up to quadrillions of arcs
+    unless you have a lot of local memory. This is not a distributed
+    algorithm.
+
+SYNOPSYS
+        use Algorithm::PageRank::XS;
+
+        my $pr = Algorithm::PageRank::XS->new(alpha => 0.85);
+
+        $pr->graph([
+                  0 => 1,
+                  0 => 2,
+                  1 => 0,
+                  2 => 1,
+                  ]
+                  );
+
+        $pr->result();
+
+        # This simple program takes up arcs and prints the ranks.
+
+        use Algorithm::PageRank::XS;
+
+        my $pr = Algorithm::PageRank::XS->new(alpha => 0.85);
+
+        while (<>) {
+            chomp;
+            my ($from, to) = split(/\t/, $_);
+            $pr->add_arc($from, $to);
+        }
+
+        while (my ($name, $rank) = each(%{$pr->result()})) {
+            print("$name,$rank\n");
+        }
+
+CONSTRUCTORS
+    new %PARAMS
+        Create a new PageRank object. Parameters are: "alpha", "max_tries",
+        and "convergence". "alpha" is the damping constant (how far from the
+        true eigenvector you are. "max_tries" is the maximum number of
+        iterations to run. "convergence" is how close our vectors must be
+        before we say we are done.
+
+    add_arc
+        Add an arc to the pagerank object before running the computation.
+        The actual values don't matter. So you can run:
+
+            $pr->add_arc("Apple", "Orange");
+
+        To mean that "Apple" links to "Orange".
+
+    graph
+        Add a graph, which is just an array of from, to combinations. This
+        is equivalent to calling "add_arc" a bunch of times, but may be more
+        convenient.
+
+    results
+        Compute the pagerank vector, and return it as a hash.
+
+        Whatever you called the nodes when specifying the arcs will be the
+        keys of this hash, where the values will be the vector (which should
+        sum to 1).
+
+PERFORMANCE
+    This module is pretty fast. I ran this on a 1 million node set with 4.5
+    million arcs in 57 seconds on my 32-bit 1.8GHz laptop. Let me know if
+    you have any performance tips.
+
+COPYRIGHT
+    Copyright (C) 2008 by Michael Axiak <mike@axiak.net>
+
+    This package is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself
+

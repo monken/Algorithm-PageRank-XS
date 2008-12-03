@@ -12,3 +12,4 @@ typemap
 pagerank.c
 XS.xs
 META.yml
+README
