@@ -1,0 +1,3 @@
+TYPEMAP
+TableRef *       T_PTROBJ
+
