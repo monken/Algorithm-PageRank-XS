@@ -177,8 +177,11 @@ int     table_delete(Table * tb)
 
         if (tb->rows != NULL) {
                 for (i = 0; i < tb->order; i++) {
-                        if (tb->rows[i] != NULL)
+                        if (tb->rows[i] != NULL) {
+                                if (tb->rows[i]->data != NULL)
+                                        free(tb->rows[i]->data);
                                 free(tb->rows[i]);
+                        }
                 }
                 free(tb->rows);
         }

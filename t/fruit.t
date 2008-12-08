@@ -17,7 +17,7 @@ while (<FRUIT>) {
 
 my @results = ();
 
-my %results = %{$pr->results()};
+my %results = %{$pr->result()};
 foreach my $key (sort keys %results) {
     push(@results, sprintf("%s,%0.4f", $key, $results{$key}));
 }

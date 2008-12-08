@@ -17,7 +17,10 @@ WriteMakefile(
        AUTHOR         => 'Michael Axiak <mike@axiak.net>') : ()),
     DEFINE            => '',
     INC               => '-I.',
-    OBJECT            => 'XS.o pagerank.o table.c',
+    OBJECT            => 'XS.o pagerank.o table.o',
+    'PREREQ_PM'       => {
+        "Test::More"   => 0.11,        # For the tests only
+    },
 
     %opts,
 

@@ -54,7 +54,7 @@ Array * page_rank(Table * inbound, unsigned int order, float alpha, float conver
 
                 t++;
 
-                norm2 = sqrt(norm2) / total_size;
+                norm2 = sqrt((double)norm2) / total_size;
 
                 array_copy(vector, new_vector);
         }
@@ -80,14 +80,13 @@ Array * initial(unsigned int order)
 Array * normalize(Array * vector)
 {
         register int i;
-        register float max = 0;
+        register double sum = 0;
 
         for (i = 0; i < array_len(vector); i++)
-                if (array_get(vector, i) > max)
-                        max = array_get(vector, i);
+                sum += array_get(vector, i);
 
         for (i = 0; i < array_len(vector); i++)
-                array_diveq(vector, i, max);
+                array_diveq(vector, i, sum);
 
         return vector;
 

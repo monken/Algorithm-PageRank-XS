@@ -27,7 +27,7 @@ $pr->graph([
 	       6 5
 	       )]);
 
-my $x = $pr->results();
+my $x = $pr->result();
 
 # We truncate digits here to prevent small floating point errors
 while (my ($key, $value) = each(%{$x})) {
@@ -36,12 +36,12 @@ while (my ($key, $value) = each(%{$x})) {
 
 # Compare it to the answer.
 is_deeply($x, {
-          '6' => '1.00000',
-          '4' => '0.78078',
+          '6' => '0.28078',
+          '4' => '0.21922',
           '1' => '0.00000',
-          '3' => '1.00000',
+          '3' => '0.28078',
           '0' => '0.00000',
           '2' => '0.00000',
-          '5' => '0.78078',
+          '5' => '0.21922'
         }, "Ran PageRank on simple graph");
 
